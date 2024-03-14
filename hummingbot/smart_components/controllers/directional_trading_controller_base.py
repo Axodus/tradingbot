@@ -87,13 +87,27 @@ class DirectionalTradingControllerConfigBase(ControllerConfigBase):
             prompt=lambda mi: "Enter the order type for taking profit (LIMIT/MARKET): ",
             prompt_on_new=True))
     trailing_stop: Optional[TrailingStop] = Field(
-        default="0.015,0.003",
+        default="0.15,1.3",
         client_data=ClientFieldData(
             prompt=lambda mi: "Enter the trailing stop as activation_price,trailing_delta (e.g., 0.015,0.003): ",
             prompt_on_new=True))
+    safe_trailing_stop: Optional[TrailingStop] = Field(
+        default="0.45,0.001",
+        client_data=ClientFieldData(
+            prompt=lambda mi: "Enter the safe trailing stop as activation_price,trailing_delta (e.g., 0.45,0.001): ",
+            prompt_on_new=True))
 
-    @validator("trailing_stop", pre=True, always=True)
+    @validator("trailing_stop", pre=True, always=True, allow_reuse=True)
     def parse_trailing_stop(cls, v):
+        if isinstance(v, str):
+            if v == "":
+                return None
+            activation_price, trailing_delta = v.split(",")
+            return TrailingStop(activation_price=Decimal(activation_price), trailing_delta=Decimal(trailing_delta))
+        return v
+
+    @validator("safe_trailing_stop", pre=True, always=True, allow_reuse=True)
+    def parse_safe_trailing_stop(cls, v):
         if isinstance(v, str):
             if v == "":
                 return None
@@ -132,6 +146,7 @@ class DirectionalTradingControllerConfigBase(ControllerConfigBase):
             take_profit=self.take_profit,
             time_limit=self.time_limit,
             trailing_stop=self.trailing_stop,
+            safe_trailing_stop=self.safe_trailing_stop,
             open_order_type=OrderType.MARKET,  # Defaulting to MARKET as is a Taker Controller
             take_profit_order_type=self.take_profit_order_type,
             stop_loss_order_type=OrderType.MARKET,  # Defaulting to MARKET as per requirement
