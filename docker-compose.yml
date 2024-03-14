@@ -2,6 +2,7 @@ version: "3.9"
 services:
   hummingbot:
     container_name: hummingbot
+    image: axodus/tradingbot:main
     build:
       context: .
       dockerfile: Dockerfile
